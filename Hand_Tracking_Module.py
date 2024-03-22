@@ -4,14 +4,15 @@ import time
 
 
 class handDetector():
-    def __init__(self, mode = False, maxHands = 2, min_detection_confidence = 0.5, min_tracking_confidence = 0.5):
+    def __init__(self, mode = False, maxHands = 2, modelComplexity=1, min_detection_confidence = 0.5, min_tracking_confidence = 0.5):
         self.mode = mode
         self.maxHands = maxHands
+        self.modelComplex = modelComplexity
         self.min_detection_confidence = min_detection_confidence
         self.min_tracking_confidence = min_tracking_confidence
 
         self.mpHands = mp.solutions.hands
-        self.hands = self.mpHands.Hands(self.mode, self.maxHands, self.min_detection_confidence, self.min_tracking_confidence) #initialize mediapipe hand object
+        self.hands = self.mpHands.Hands(self.mode, self.maxHands, self.modelComplex, self.min_detection_confidence, self.min_tracking_confidence) #initialize mediapipe hand object
         self.mpDraw = mp.solutions.drawing_utils
 
     def find_hands(self, img, draw = True):
@@ -24,13 +25,25 @@ class handDetector():
                     self.mpDraw.draw_landmarks(img, handLms, self.mpHands.HAND_CONNECTIONS) # draws landmarks on hands
         return img
 
+    def find_position(self, img, handNo = 0, draw = True):
 
-                # for id, lm in enumerate(handLms.landmark):
-                #     #print(id, lm)
-                #     h, w, c = img.shape
-                #     cx, cy = int(lm.x*w), int(lm.y*h)
-                #     print(id, cx, cy) #gives us the id and the position of the landmark in integer
-                    
+        landmark_list = []
+
+        if self.results.multi_hand_landmarks:
+            current_hand = self.results.multi_hand_landmarks[handNo]
+
+            for id, lm in enumerate(current_hand.landmark):
+                #print(id, lm)
+                h, w, c = img.shape
+                cx, cy = int(lm.x*w), int(lm.y*h)
+                #print(id, cx, cy) #gives us the id and the position of the landmark in integer
+
+                landmark_list.append([id, cx, cy])  
+
+                if draw:
+                    cv2.circle(img, (cx, cy), 5, (0, 0, 255,), cv2.FILLED)
+
+        return landmark_list
 
 def main():
     prevtime = 0
@@ -42,7 +55,10 @@ def main():
     while True: # run the camera
         success, img = cap.read()
         img = detector.find_hands(img)
+        lmlist = detector.find_position(img)
 
+        if len(lmlist) != 0:
+            print(lmlist[4])
 
         curtime = time.time()
         fps = 1/(curtime-prevtime)
